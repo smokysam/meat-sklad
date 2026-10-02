@@ -31,7 +31,7 @@ try:
       "client_id": "10810558379729674146",
       "auth_uri": "https://google.com",
       "token_uri": "https://googleapis.com",
-      "auth_provider_x509_cert_url = "https://googleapis.com",
+      "auth_provider_x509_cert_url": "https://googleapis.com",
       "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sklad-admin%40://gserviceaccount.com",
       "universe_domain": "googleapis.com"
     }
