@@ -27,7 +27,7 @@ try:
     client = gspread.authorize(creds)
     
     # Открываем вашу Google Таблицу по точному имени файла
-    sheet = client.open("Новая таблица.xlsx")
+    sheet = client.open("Новая таблица")
     sheet_prihod = sheet.worksheet("Приход")
     sheet_prodazha = sheet.worksheet("Продажа")
 except Exception as e:
