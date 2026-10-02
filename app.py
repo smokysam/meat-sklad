@@ -21,11 +21,23 @@ st.title("🥩 Псы на мясе: Склад")
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
     scope = ["https://google.com", "https://googleapis.com"]
-    # Ключи доступа мы загрузим чуть позже в настройки Streamlit Cloud
-    creds_dict = st.secrets["gcp_service_account"]
+        # Вставляем данные из вашего JSON-файла прямо в код
+    creds_dict = {
+      "type": "service_account",
+      "project_id": "meat-sklad-app",
+      "private_key_id": "d96b9800076288857de7b04105e4c9f2e589de43",
+      "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCTyn/eM09T6vOG\nln6w3+RxiW41DgU+sNvNvndTmq+B9mob2baeBLgxuP4DVnCeJO/p6H5NQnaFxnER\nHh3\nwqsaCwGhFPG65OU8zPbvd+o4haL84qwwKtwgCDh6mc2tLzhj2ksDdjJ56YVZiUMI\nnvnq88s2YduBaYB8Vqoy1Yukd7JmnwSvsahQx2YRK4NjBGmFdPLSoQsHkZSyP\nn67vyMEnq7MXEdOli6V7ZyuApaxуXKlhQgnhG7G7CLYpZtpRWUoWhzZxBxSUHV1W\nnwkMVB7TKKqa9ndNK/OBJjrhcnQ3QC0tKc5Dr1uLcRXaYNNjFVQMRTVQZnz6M0H\nnj2M243VAgMBAAECggEAD/AshD9GZiW18Xa603fqW0kYBLR22RGeElDHKV1xTnqJ\nnUkPKey8MnnG3xMeAHVJ/MsDNCFptUI8XThfp+oQFLwAgjd8GgKZR7iYWa7JMc6\\\nnanz/4I2876PeqyALLDUn2KsYnJV1p6duE2MgqdXvxNX56B\n-----END PRIVATE KEY-----\n",
+      "client_email": "sklad-admin@://gserviceaccount.com",
+      "client_id": "10810558379729674146",
+      "auth_uri": "https://google.com",
+      "token_uri": "https://googleapis.com",
+      "auth_provider_x509_cert_url = "https://googleapis.com",
+      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sklad-admin%40://gserviceaccount.com",
+      "universe_domain": "googleapis.com"
+    }
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
-    
+
     # Открываем вашу Google Таблицу по точному имени файла
     sheet = client.open_by_key("1tUSQUfy61KASOwuMDeCixWWt6y68XondNohNitiW7cM")
     sheet_prihod = sheet.worksheet("Приход")
