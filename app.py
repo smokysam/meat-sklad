@@ -21,7 +21,7 @@ try:
     client = gspread.service_account_from_dict(dict(st.secrets))
     
     # ВНИМАНИЕ: Вшит точный рабочий ID вашей таблицы "Псы на мясе: Склад"
-    sheet = client.open_by_key("1tUSQUfy61KASOwuMDeCixWWt6y68XondNohNitiW7cM")
+    sheet = client.open_by_key("1POR8PXdF8jH-Yvi8KUNBFDKgI57knZW5EqoWqgYEHsM")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
 except Exception as e:
