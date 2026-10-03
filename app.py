@@ -1,6 +1,5 @@
 import streamlit as st
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import datetime
 
@@ -19,23 +18,16 @@ st.title("🥩 Псы на мясе: Склад")
 
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
-    scope = [
-        "https://googleapis.com",
-        "https://googleapis.com"
-    ]
-    
-    # Код берёт созданные вами секреты напрямую из настроек хостинга
-    creds_dict = dict(st.secrets["gcp_service_account"])
-    
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
+    # Официальный метод авторизации Streamlit + gspread
+    # Автоматически подтягивает плоские ключи из st.secrets
+    client = gspread.service_account_from_dict(dict(st.secrets))
 
     sheet = client.open_by_key("1tUSQUfy61KASOwuMDeCixWWt6y68XondNohNitiW7cM")
     sheet_prihod = sheet.worksheet("Приход")
     sheet_prodazha = sheet.worksheet("Продажа")
 except Exception as e:
     st.error(f"Ошибка подключения к Google Таблице: {e}")
-    st.info("Пожалуйста, убедитесь, что вы добавили JSON ключа в настройки Secrets вашего Streamlit-приложения.")
+    st.info("Пожалуйста, убедитесь, что вы добавили все строки из JSON-файла в настройки Secrets вашего Streamlit-приложения.")
     st.stop()
 
 # --- ЗАГРУЗКА ДАННЫХ ИЗ ТАБЛИЦЫ ---
@@ -51,6 +43,7 @@ with tab1:
         product_sale = st.selectbox("Выберите товар:", df_prihod["Название"].tolist())
         weight_sale = st.number_input("Продано вес (кг):", min_value=0.0, step=0.1, format="%.3f")
         
+        # Получаем данные о цене и остатке выбранного товара
         price_row = df_prihod[df_prihod["Название"] == product_sale].iloc[0]
         price = float(price_row["Цена за кг"])
         current_stock = float(price_row["Остаток (кг)"])
