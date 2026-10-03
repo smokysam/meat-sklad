@@ -34,7 +34,7 @@ try:
     client = gspread.service_account_from_dict(st.session_state["creds"])
     
     # Открываем вашу Google Таблицу по её точному названию
-    sheet = client.open("Псы на мясе")
+    sheet = client.open_by_key("1POR8PXdF8jH-Yvi8KUNBFDKgI57knZW5EqoWqgYEHsM")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
 except Exception as e:
