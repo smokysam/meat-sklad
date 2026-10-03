@@ -16,13 +16,15 @@ st.markdown("""
 
 st.title("🥩 Псы на мясе: Склад")
 
+# --- ПОДКЛЮЧЕНИЕ ЧЕРЕЗ GOOGLE ДИСК ---
 try:
-    url = "https://google.com"
+    # Защищенная сборка ссылки от автопереводчика браузера
+    protocol = "https://"
+    domain = "://google.com"
+    path = "/uc?export=download&id="
+    f_id = "1cSU2IXf60gX8KkUeMvOEX5R1IvnDbMCj"
     
-    # Режем ID строго по текстовым разделителям без вызова встроенных методов Python
-    f_id = url.split("/d/")[1].split("/")[0] if "/d/" in url else url.split("id=")[1].split("&")[0] if "id=" in url else url
-    
-    d_url = f"https://google.com{f_id}"
+    d_url = f"{protocol}{domain}{path}{f_id}"
     res = requests.get(d_url)
     c_dict = res.json()
     
