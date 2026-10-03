@@ -16,22 +16,17 @@ st.markdown("""
 
 st.title("🥩 Псы на мясе: Склад")
 
-# --- ПОДКЛЮЧЕНИЕ ЧЕРЕЗ GOOGLE ДИСК ---
 try:
-    # Вставьте скопированную ссылку на файл ниже между кавычками:
-    url = "https://drive.google.com/file/d/1ciW22IX7vDCoYSA1n2s01W3XjXMCaAQF/view?usp=drive_link"
+    url = "https://google.com"
     
-    # Автоматически вырезаем уникальный ID файла из ссылки
-    file_id = url.split("/d/")[1].split("/")[0] if "/d/" in url else url.split("id=")[1].split("&")[0] if "id=" in url else url
-
-    download_url = f"https://google.com{file_id}"
+    # Режем ID строго по текстовым разделителям без вызова встроенных методов Python
+    f_id = url.split("/d/")[1].split("/")[0] if "/d/" in url else url.split("id=")[1].split("&")[0] if "id=" in url else url
     
-    response = requests.get(download_url)
-    creds_dict = response.json()
+    d_url = f"https://google.com{f_id}"
+    res = requests.get(d_url)
+    c_dict = res.json()
     
-    client = gspread.service_account_from_dict(creds_dict)
-    
-    # Открываем вашу таблицу по её названию
+    client = gspread.service_account_from_dict(c_dict)
     sheet = client.open("Псы на мясе")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
@@ -39,13 +34,11 @@ except Exception as e:
     st.error(f"Ошибка подключения к Google Таблице: {e}")
     st.stop()
 
-# --- ЗАГРУЗКА ДАННЫХ ИЗ ТАБЛИЦЫ ---
 data_prihod = sheet_prihod.get_all_records()
 df_prihod = pd.DataFrame(data_prihod)
 
 tab1, tab2, tab3 = st.tabs(["🛍️ Оформить Продажу", "📥 Принять Приход", "📊 Текущий Склад"])
 
-# --- ВКЛАДКА 1: ПРОДАЖА ---
 with tab1:
     st.subheader("Оформление продажи у прилавка")
     if df_prihod.empty:
@@ -80,7 +73,6 @@ with tab1:
                     st.success(f"Продано {weight_sale} кг '{product_sale}'. Остатки обновлены!")
                     st.rerun()
 
-# --- ВКЛАДКА 2: ПРИХОД ---
 with tab2:
     st.subheader("Поступление нового товара")
     with st.form("prihod_form", clear_on_submit=True):
@@ -107,7 +99,6 @@ with tab2:
                 st.success(f"Товар '{product_prihod}' успешно добавлен/обновлен!")
                 st.rerun()
 
-# --- ВКЛАДКА 3: ТЕКУЩИЙ СКЛАД ---
 with tab3:
     st.subheader("Актуальные остатки и розничные цены")
     if df_prihod.empty:
