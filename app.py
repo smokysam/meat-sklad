@@ -29,7 +29,7 @@ if "creds" not in st.session_state:
             st.error(f"Не удалось прочитать файл: {e}")
     st.stop()
 
-# --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ЧЕРЕЗ ЗАГРУЖЕННЫЙ КЛЮЧ ---
+# --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
     client = gspread.service_account_from_dict(st.session_state["creds"])
     
@@ -45,10 +45,8 @@ except Exception as e:
     st.stop()
 
 # --- ЗАГРУЗКА ДАННЫХ ИЗ ТАБЛИЦЫ ---
-# Читаем все данные с листа "приход"
 raw_data = sheet_prihod.get_all_values()
 
-# Если таблица не пустая, убираем шапку (первая строка) и создаем DataFrame
 if len(raw_data) > 1:
     headers = raw_data[0]
     df_prihod = pd.DataFrame(raw_data[1:], columns=headers)
@@ -59,21 +57,55 @@ tab1, tab2, tab3 = st.tabs(["🛍️ Оформить Продажу", "📥 П�
 
 # --- ВКЛАДКА 1: ПРОДАЖА ---
 with tab1:
+    # --- НОВЫЙ БЛОК: КАССА ЗА ДЕНЬ ---
+    st.subheader("📊 Отчет за смену")
+    if st.button("💵 ПОСЧИТАТЬ КАССУ ЗА СЕГОДНЯ"):
+        try:
+            # Получаем все данные с листа "продажа"
+            raw_sales = sheet_prodazha.get_all_values()
+            
+            if len(raw_sales) > 1:
+                df_sales = pd.DataFrame(raw_sales[1:], columns=raw_sales[0])
+                today_str = datetime.date.today().strftime("%d.%m.%Y")
+                
+                # Фильтруем продажи строго за сегодняшнюю дату
+                today_sales = df_sales[df_sales["Дата"].str.strip() == today_str]
+                
+                if not today_sales.empty:
+                    # Переводим столбец "К оплате" в числа и суммируем
+                    def clean_sum(val):
+                        try:
+                            return float(str(val).replace(",", ".").replace(" ", "").strip())
+                        except:
+                            return 0.0
+                    
+                    total_cash = today_sales["К оплате"].apply(clean_sum).sum()
+                    count_sales = len(today_sales)
+                    
+                    st.success(f"📈 Выручка за сегодня ({today_str}): **{total_cash:.2f} руб.**")
+                    st.info(f"🛒 Всего оформлено продаж (чеков): **{count_sales} шт.**")
+                else:
+                    st.warning(f"За сегодня ({today_str}) продаж пока не зарегистрировано.")
+            else:
+                st.warning("Лист продаж абсолютно пуст.")
+        except Exception as sales_err:
+            st.error(f"Не удалось посчитать кассу: {sales_err}")
+            
+    st.markdown("---")
+    
     st.subheader("Оформление продажи у прилавка")
     if df_prihod.empty or "Название" not in df_prihod.columns:
         st.info("На складе пока нет товаров или таблица пуста.")
     else:
-        # Фильтруем пустые строки, оставляем только реальные названия товаров
         valid_products = df_prihod[df_prihod["Название"].str.strip() != ""]["Название"].tolist()
         
         with st.form("sale_form", clear_on_submit=True):
             product_sale = st.selectbox("Выберите товар:", valid_products)
             weight_sale = st.number_input("Продано вес (кг):", min_value=0.0, step=0.1, format="%.3f")
             
-            # Находим данные выбранного товара по его названию
-            matched_idx = df_prihod[df_prihod["Название"] == product_sale].index[0]
+            matched_rows = df_prihod[df_prihod["Название"] == product_sale]
+            matched_idx = matched_rows.index[0]
             
-            # Приводим к числам цену и остаток
             try:
                 price = float(str(df_prihod.loc[matched_idx, "Цена за кг"]).replace(",", ".").strip())
             except:
@@ -96,17 +128,16 @@ with tab1:
                     st.error(f"Недостаточно товара! Осталось всего: {current_stock} кг")
                 else:
                     today = datetime.date.today().strftime("%d.%m.%Y")
-                    # Записываем на лист "продажа": Дата в А, Товар в B, Вес в C, Цена в D, Сумма в E
-                    sheet_prodazha.append_row([today, product_sale, weight_sale, price, total_sum])
+                    # Запись на лист "продажа" по вашим колонкам: Дата(A), Товар(B), Продано(кг)(C), Цена за кг(D), К оплате(E)
+                    sheet_prodazha.append_row([today, product_sale, str(weight_sale).replace(".", ","), str(price).replace(".", ","), str(total_sum).replace(".", ",")])
                     
-                    # Вычисляем точный номер физической строки в Google Таблице (+2 из-за индексов Pandas и шапки)
                     row_in_sheet = int(matched_idx) + 2
                     new_stock = current_stock - weight_sale
                     
-                    # Жестко обновляем ячейку остатка: строка товара, столбец 3 (C)
+                    # Пишем новый остаток на лист "приход" в столбец C (3)
                     sheet_prihod.update_cell(row_in_sheet, 3, str(new_stock).replace(".", ","))
                     
-                    st.success(f"Продано {weight_sale} кг '{product_sale}'. Остатки обновлены!")
+                    st.success(f"Продано {weight_sale} text кг '{product_sale}'. Остатки обновлены!")
                     st.rerun()
 
 # --- ВКЛАДКА 2: ПРИХОД ---
@@ -141,7 +172,6 @@ with tab2:
                     sheet_prihod.update_cell(row_in_sheet, 3, str(price_prihod).replace(".", ","))
                     st.success(f"Товар '{product_prihod}' успешно обновлен на складе!")
                 else:
-                    # Если товара нет, пишем: пустой А (1), Название в B (2), Вес в C (3), Цена в D (4)
                     sheet_prihod.append_row(["", product_prihod, str(weight_prihod).replace(".", ","), str(price_prihod).replace(".", ",")])
                     st.success(f"Новый товар '{product_prihod}' добавлен в конец таблицы!")
                 st.rerun()
@@ -152,6 +182,5 @@ with tab3:
     if df_prihod.empty:
         st.write("Склад пуст.")
     else:
-        # Показываем только заполненные столбцы, скрывая пустой столбец A
         display_df = df_prihod[df_prihod["Название"].str.strip() != ""]
         st.dataframe(display_df[["Название", "Остаток (кг)", "Цена за кг"]], hide_index=True, use_container_width=True)
