@@ -18,7 +18,9 @@ st.title("🥩 Псы на мясе: Склад")
 
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
-    client = gspread.service_account_from_dict(dict(st.secrets))
+    # Подключаемся напрямую через сохраненный в репозитории файл key.json
+    client = gspread.service_account(filename="key.json")
+
     sheet = client.open_by_key("1tUSQUfy61KASOwuMDeCixWWt6y68XondNohNitiW7cM")
     sheet_prihod = sheet.worksheet("Приход")
     sheet_prodazha = sheet.worksheet("Продажа")
@@ -39,10 +41,14 @@ with tab1:
         product_sale = st.selectbox("Выберите товар:", df_prihod["Название"].tolist())
         weight_sale = st.number_input("Продано вес (кг):", min_value=0.0, step=0.1, format="%.3f")
         
-        # ИСПРАВЛЕНО: Добавлены квадратные скобки для корректного выбора строки в pandas
-        price_row = df_prihod[df_prihod["Название"] == product_sale].iloc[0]
-        price = float(price_row["Цена за кг"])
-        current_stock = float(price_row["Остаток (кг)"])
+        # Получаем строку для выбранного товара
+        matched_rows = df_prihod[df_prihod["Название"] == product_sale]
+        if not matched_rows.empty:
+            price = float(matched_rows.iloc[0]["Цена за кг"])
+            current_stock = float(matched_rows.iloc[0]["Остаток (кг)"])
+        else:
+            price = 0.0
+            current_stock = 0.0
         
         total_sum = weight_sale * price
         st.info(f"Цена за кг: {price} руб.  |  💵 К ОПЛАТЕ: {total_sum:.2f} руб.")
@@ -58,7 +64,7 @@ with tab1:
                 today = datetime.date.today().strftime("%d.%m.%Y")
                 sheet_prodazha.append_row([today, product_sale, weight_sale, price, total_sum])
                 
-                row_idx = int(df_prihod[df_prihod["Название"] == product_sale].index[0]) + 2
+                row_idx = int(matched_rows.index[0]) + 2
                 new_stock = current_stock - weight_sale
                 sheet_prihod.update_cell(row_idx, 2, new_stock)
                 
@@ -78,15 +84,17 @@ with tab2:
             if weight_prihod <= 0:
                 st.warning("Введите корректный вес!")
             else:
-                product_row = df_prihod[df_prihod["Название"] == product_prihod].iloc[0]
-                current_stock = float(product_row["Остаток (кг)"])
-                row_idx = int(df_prihod[df_prihod["Название"] == product_prihod].index[0]) + 2
-                
-                new_stock = current_stock + weight_prihod
-                sheet_prihod.update_cell(row_idx, 2, new_stock)
-                
-                st.success(f"Остаток товара успешно увеличен на {weight_prihod} кг!")
-                st.rerun()
+                matched_rows = df_prihod[df_prihod["Название"] == product_prihod]
+                if not matched_rows.empty:
+                    current_stock = float(matched_rows.iloc[0]["Остаток (кг)"])
+                    row_idx = int(matched_rows.index[0]) + 2
+                    
+                    new_stock = current_stock + weight_prihod
+                    sheet_prihod.update_cell(row_idx, 2, new_stock)
+                    st.success(f"Остаток товара успешно увеличен на {weight_prihod} кг!")
+                    st.rerun()
+                else:
+                    st.error("Товар не найден в таблице.")
 
 # --- ВКЛАДКА 3: ТЕКУЩИЙ СКЛАД ---
 with tab3:
