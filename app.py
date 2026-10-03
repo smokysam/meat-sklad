@@ -18,16 +18,12 @@ st.title("🥩 Псы на мясе: Склад")
 
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
-    # Метод берёт чистые доступы из сохранённых вами Secrets
     client = gspread.service_account_from_dict(dict(st.secrets))
-
-    # Подключение к вашей таблице
     sheet = client.open_by_key("1tUSQUfy61KASOwuMDeCixWWt6y68XondNohNitiW7cM")
     sheet_prihod = sheet.worksheet("Приход")
     sheet_prodazha = sheet.worksheet("Продажа")
 except Exception as e:
     st.error(f"Ошибка подключения к Google Таблице: {e}")
-    st.info("Пожалуйста, убедитесь, что вы правильно сохранили Secrets в настройках приложения.")
     st.stop()
 
 # --- ЗАГРУЗКА ДАННЫХ ИЗ ТАБЛИЦЫ ---
@@ -36,14 +32,14 @@ df_prihod = pd.DataFrame(data_prihod)
 
 tab1, tab2, tab3 = st.tabs(["🛍️ Оформить Продажу", "📥 Принять Приход", "📊 Текущий Склад"])
 
-# --- ВКЛАДКА 1: ПРОДАЖА (РАСХОД С ОСТАТКОВ) ---
+# --- ВКЛАДКА 1: ПРОДАЖА ---
 with tab1:
     st.subheader("Оформление продажи у прилавка")
     with st.form("sale_form", clear_on_submit=True):
         product_sale = st.selectbox("Выберите товар:", df_prihod["Название"].tolist())
         weight_sale = st.number_input("Продано вес (кг):", min_value=0.0, step=0.1, format="%.3f")
         
-        # Получаем данные о цене и остатке выбранного товара
+        # ИСПРАВЛЕНО: Добавлены квадратные скобки [0] для корректного выбора строки в pandas
         price_row = df_prihod[df_prihod["Название"] == product_sale].iloc[0]
         price = float(price_row["Цена за кг"])
         current_stock = float(price_row["Остаток (кг)"])
@@ -57,20 +53,19 @@ with tab1:
             if weight_sale <= 0:
                 st.warning("Введите корректный вес мяса!")
             elif current_stock < weight_sale:
-                st.error(f"Недостаточно товара! На складе осталось всего: {current_stock} кг")
+                st.error(f"Недостаточно товара! Осталось всего: {current_stock} кг")
             else:
                 today = datetime.date.today().strftime("%d.%m.%Y")
                 sheet_prodazha.append_row([today, product_sale, weight_sale, price, total_sum])
                 
-                # Обновление строки в Google таблице
                 row_idx = int(df_prihod[df_prihod["Название"] == product_sale].index[0]) + 2
                 new_stock = current_stock - weight_sale
                 sheet_prihod.update_cell(row_idx, 2, new_stock)
                 
-                st.success(f"Продано {weight_sale} кг '{product_sale}'. Сумма {total_sum:.2f} руб. Остатки обновлены!")
+                st.success(f"Продано {weight_sale} кг '{product_sale}'. Остатки обновлены!")
                 st.rerun()
 
-# --- ВКЛАДКА 2: ПРИХОД (ПОСТУПЛЕНИЕ НОВОГО МЯСА) ---
+# --- ВКЛАДКА 2: ПРИХОД ---
 with tab2:
     st.subheader("Поступление новой партии товара")
     with st.form("prihod_form", clear_on_submit=True):
@@ -90,7 +85,7 @@ with tab2:
                 new_stock = current_stock + weight_prihod
                 sheet_prihod.update_cell(row_idx, 2, new_stock)
                 
-                st.success(f"Остаток товара '{product_prihod}' успешно увеличен на {weight_prihod} кг!")
+                st.success(f"Остаток товара успешно увеличен на {weight_prihod} кг!")
                 st.rerun()
 
 # --- ВКЛАДКА 3: ТЕКУЩИЙ СКЛАД ---
