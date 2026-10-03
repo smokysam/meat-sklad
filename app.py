@@ -18,16 +18,16 @@ st.title("🥩 Псы на мясе: Склад")
 
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
-    # Официальный метод авторизации Streamlit + gspread
-    # Автоматически подтягивает плоские ключи из st.secrets
+    # Метод берёт чистые доступы из сохранённых вами Secrets
     client = gspread.service_account_from_dict(dict(st.secrets))
 
+    # Подключение к вашей таблице
     sheet = client.open_by_key("1tUSQUfy61KASOwuMDeCixWWt6y68XondNohNitiW7cM")
     sheet_prihod = sheet.worksheet("Приход")
     sheet_prodazha = sheet.worksheet("Продажа")
 except Exception as e:
     st.error(f"Ошибка подключения к Google Таблице: {e}")
-    st.info("Пожалуйста, убедитесь, что вы добавили все строки из JSON-файла в настройки Secrets вашего Streamlit-приложения.")
+    st.info("Пожалуйста, убедитесь, что вы правильно сохранили Secrets в настройках приложения.")
     st.stop()
 
 # --- ЗАГРУЗКА ДАННЫХ ИЗ ТАБЛИЦЫ ---
@@ -62,6 +62,7 @@ with tab1:
                 today = datetime.date.today().strftime("%d.%m.%Y")
                 sheet_prodazha.append_row([today, product_sale, weight_sale, price, total_sum])
                 
+                # Обновление строки в Google таблице
                 row_idx = int(df_prihod[df_prihod["Название"] == product_sale].index[0]) + 2
                 new_stock = current_stock - weight_sale
                 sheet_prihod.update_cell(row_idx, 2, new_stock)
