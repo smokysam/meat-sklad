@@ -17,11 +17,11 @@ st.title("🥩 Псы на мясе: Склад")
 
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
-    # Читаем доступы напрямую из настроек Secrets хостинга
+    # Читаем доступы из сохраненных Secrets
     client = gspread.service_account_from_dict(dict(st.secrets))
     
-    # Открываем по ID и листам с маленькой буквы
-    sheet = client.open_by_key("1P0RllPXd1LH-YvBKUNBFDkgS7knzWSEqoWqgYfHkM")
+    # ВНИМАНИЕ: Вшит точный рабочий ID вашей таблицы "Псы на мясе: Склад"
+    sheet = client.open_by_key("1tUSQUfy61KASOwuMDeCixWWt6y68XondNohNitiW7cM")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
 except Exception as e:
