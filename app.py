@@ -39,7 +39,7 @@ with tab1:
         product_sale = st.selectbox("Выберите товар:", df_prihod["Название"].tolist())
         weight_sale = st.number_input("Продано вес (кг):", min_value=0.0, step=0.1, format="%.3f")
         
-        # ИСПРАВЛЕНО: Добавлены квадратные скобки [0] для корректного выбора строки в pandas
+        # ИСПРАВЛЕНО: Добавлены квадратные скобки для корректного выбора строки в pandas
         price_row = df_prihod[df_prihod["Название"] == product_sale].iloc[0]
         price = float(price_row["Цена за кг"])
         current_stock = float(price_row["Остаток (кг)"])
