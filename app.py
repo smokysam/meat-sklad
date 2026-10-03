@@ -110,8 +110,8 @@ with tab2:
                     new_stock = current_stock + weight_prihod
                     
                     # ИСПРАВЛЕНО ЖЕСТКО ПОД ВАШИ СТОЛБЦЫ:
-                    sheet_prihod.update_cell(row_idx, 3, new_stock)    # Остаток пишем в столбец C (3)
-                    sheet_prihod.update_cell(row_idx, 4, price_prihod) # Новую цену пишем в столбец D (4)
+                    sheet_prihod.update_cell(row_idx, 2, new_stock)    # Остаток пишем в столбец C (3)
+                    sheet_prihod.update_cell(row_idx, 3, price_prihod) # Новую цену пишем в столбец D (4)
                 else:
                     # Если товара нет, добавляем новую строчку: пустой А (1), Название в B (2), Остаток в C (3), Цена в D (4)
                     sheet_prihod.append_row(["", product_prihod, weight_prihod, price_prihod])
