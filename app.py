@@ -33,7 +33,7 @@ if "creds" not in st.session_state:
 try:
     client = gspread.service_account_from_dict(st.session_state["creds"])
     
-    # Открываем по чистому текстовому названию таблицы
+    # Открываем вашу Google Таблицу по её точному названию
     sheet = client.open("Псы на мясе")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
