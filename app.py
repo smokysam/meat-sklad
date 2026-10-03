@@ -33,7 +33,7 @@ if "creds" not in st.session_state:
 try:
     client = gspread.service_account_from_dict(st.session_state["creds"])
     
-    # Открываем вашу Google Таблицу по её точному названию
+    # Открываем вашу Google Таблицу по её точному ID
     sheet = client.open_by_key("1POR8PXdF8jH-Yvi8KUNBFDKgI57knZW5EqoWqgYEHsM")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
@@ -45,24 +45,44 @@ except Exception as e:
     st.stop()
 
 # --- ЗАГРУЗКА ДАННЫХ ИЗ ТАБЛИЦЫ ---
-data_prihod = sheet_prihod.get_all_records()
-df_prihod = pd.DataFrame(data_prihod)
+# Читаем все данные с листа "приход"
+raw_data = sheet_prihod.get_all_values()
+
+# Если таблица не пустая, убираем шапку (первая строка) и создаем DataFrame
+if len(raw_data) > 1:
+    headers = raw_data[0]
+    df_prihod = pd.DataFrame(raw_data[1:], columns=headers)
+else:
+    df_prihod = pd.DataFrame()
 
 tab1, tab2, tab3 = st.tabs(["🛍️ Оформить Продажу", "📥 Принять Приход", "📊 Текущий Склад"])
 
 # --- ВКЛАДКА 1: ПРОДАЖА ---
 with tab1:
     st.subheader("Оформление продажи у прилавка")
-    if df_prihod.empty:
-        st.info("На складе пока нет товаров. Добавьте их на вкладке 'Принять Приход'.")
+    if df_prihod.empty or "Название" not in df_prihod.columns:
+        st.info("На складе пока нет товаров или таблица пуста.")
     else:
+        # Фильтруем пустые строки, оставляем только реальные названия товаров
+        valid_products = df_prihod[df_prihod["Название"].str.strip() != ""]["Название"].tolist()
+        
         with st.form("sale_form", clear_on_submit=True):
-            product_sale = st.selectbox("Выберите товар:", df_prihod["Название"].tolist())
+            product_sale = st.selectbox("Выберите товар:", valid_products)
             weight_sale = st.number_input("Продано вес (кг):", min_value=0.0, step=0.1, format="%.3f")
             
-            matched_rows = df_prihod[df_prihod["Название"] == product_sale]
-            price = float(matched_rows["Цена за кг"].values[0])
-            current_stock = float(matched_rows["Остаток (кг)"].values[0])
+            # Находим данные выбранного товара по его названию
+            matched_idx = df_prihod[df_prihod["Название"] == product_sale].index[0]
+            
+            # Приводим к числам цену и остаток
+            try:
+                price = float(str(df_prihod.loc[matched_idx, "Цена за кг"]).replace(",", ".").strip())
+            except:
+                price = 0.0
+                
+            try:
+                current_stock = float(str(df_prihod.loc[matched_idx, "Остаток (кг)"]).replace(",", ".").strip())
+            except:
+                current_stock = 0.0
             
             total_sum = weight_sale * price
             st.info(f"Цена за кг: {price} руб.  |  💵 К ОПЛАТЕ: {total_sum:.2f} руб.")
@@ -76,13 +96,15 @@ with tab1:
                     st.error(f"Недостаточно товара! Осталось всего: {current_stock} кг")
                 else:
                     today = datetime.date.today().strftime("%d.%m.%Y")
+                    # Записываем на лист "продажа": Дата в А, Товар в B, Вес в C, Цена в D, Сумма в E
                     sheet_prodazha.append_row([today, product_sale, weight_sale, price, total_sum])
                     
-                    row_idx = int(matched_rows.index[0]) + 2
+                    # Вычисляем точный номер физической строки в Google Таблице (+2 из-за индексов Pandas и шапки)
+                    row_in_sheet = int(matched_idx) + 2
                     new_stock = current_stock - weight_sale
                     
-                    # ИСПРАВЛЕНО: Запись остатка при продаже строго в столбец C (3)
-                    sheet_prihod.update_cell(row_idx, 3, new_stock)
+                    # Жестко обновляем ячейку остатка: строка товара, столбец 3 (C)
+                    sheet_prihod.update_cell(row_in_sheet, 3, str(new_stock).replace(".", ","))
                     
                     st.success(f"Продано {weight_sale} кг '{product_sale}'. Остатки обновлены!")
                     st.rerun()
@@ -101,22 +123,27 @@ with tab2:
             if not product_prihod or weight_prihod <= 0 or price_prihod <= 0:
                 st.warning("Заполните все поля корректно!")
             else:
-                if not df_prihod.empty and product_prihod in df_prihod["Название"].tolist():
-                    matched_rows = df_prihod[df_prihod["Название"] == product_prihod]
-                    current_stock = float(matched_rows["Остаток (кг)"].values[0])
-                    row_idx = int(matched_rows.index[0]) + 2
-                    
-                    # Складываем приход со старым остатком мяса
+                titles_list = [str(t).strip().lower() for t in df_prihod["Название"].tolist()]
+                search_title = str(product_prihod).strip().lower()
+                
+                if search_title in titles_list:
+                    matched_idx = titles_list.index(search_title)
+                    try:
+                        current_stock = float(str(df_prihod.loc[matched_idx, "Остаток (кг)"]).replace(",", ".").strip())
+                    except:
+                        current_stock = 0.0
+                        
+                    row_in_sheet = int(matched_idx) + 2
                     new_stock = current_stock + weight_prihod
                     
-                    # ИСПРАВЛЕНО ЖЕСТКО ПОД ВАШИ СТОЛБЦЫ:
-                    sheet_prihod.update_cell(row_idx, 2, new_stock)    # Остаток пишем в столбец C (3)
-                    sheet_prihod.update_cell(row_idx, 3, price_prihod) # Новую цену пишем в столбец D (4)
+                    # Обновляем остаток в C (3) и цену в D (4)
+                    sheet_prihod.update_cell(row_in_sheet, 2, str(new_stock).replace(".", ","))
+                    sheet_prihod.update_cell(row_in_sheet, 3, str(price_prihod).replace(".", ","))
+                    st.success(f"Товар '{product_prihod}' успешно обновлен на складе!")
                 else:
-                    # Если товара нет, добавляем новую строчку: пустой А (1), Название в B (2), Остаток в C (3), Цена в D (4)
-                    sheet_prihod.append_row(["", product_prihod, weight_prihod, price_prihod])
-                
-                st.success(f"Товар '{product_prihod}' успешно добавлен/обновлен!")
+                    # Если товара нет, пишем: пустой А (1), Название в B (2), Вес в C (3), Цена в D (4)
+                    sheet_prihod.append_row(["", product_prihod, str(weight_prihod).replace(".", ","), str(price_prihod).replace(".", ",")])
+                    st.success(f"Новый товар '{product_prihod}' добавлен в конец таблицы!")
                 st.rerun()
 
 # --- ВКЛАДКА 3: ТЕКУЩИЙ СКЛАД ---
@@ -125,4 +152,6 @@ with tab3:
     if df_prihod.empty:
         st.write("Склад пуст.")
     else:
-        st.dataframe(df_prihod[["Название", "Остаток (кг)", "Цена за кг"]], hide_index=True, use_container_width=True)
+        # Показываем только заполненные столбцы, скрывая пустой столбец A
+        display_df = df_prihod[df_prihod["Название"].str.strip() != ""]
+        st.dataframe(display_df[["Название", "Остаток (кг)", "Цена за кг"]], hide_index=True, use_container_width=True)
