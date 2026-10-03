@@ -80,6 +80,8 @@ with tab1:
                     
                     row_idx = int(matched_rows.index[0]) + 2
                     new_stock = current_stock - weight_sale
+                    
+                    # ИСПРАВЛЕНО: Запись остатка при продаже строго в столбец C (3)
                     sheet_prihod.update_cell(row_idx, 3, new_stock)
                     
                     st.success(f"Продано {weight_sale} кг '{product_sale}'. Остатки обновлены!")
@@ -103,15 +105,16 @@ with tab2:
                     matched_rows = df_prihod[df_prihod["Название"] == product_prihod]
                     current_stock = float(matched_rows["Остаток (кг)"].values[0])
                     row_idx = int(matched_rows.index[0]) + 2
+                    
+                    # Складываем приход со старым остатком мяса
                     new_stock = current_stock + weight_prihod
-                    sheet_prihod.update_cell(row_idx, 3, new_stock)
-                    sheet_prihod.update_cell(row_idx, 4, price_prihod)
+                    
+                    # ИСПРАВЛЕНО ЖЕСТКО ПОД ВАШИ СТОЛБЦЫ:
+                    sheet_prihod.update_cell(row_idx, 3, new_stock)    # Остаток пишем в столбец C (3)
+                    sheet_prihod.update_cell(row_idx, 4, price_prihod) # Новую цену пишем в столбец D (4)
                 else:
-                    # Корректное добавление новой строки в самый конец таблицы по вашим колонкам A, B, C
-                    next_row = len(df_prihod) + 2
-                    sheet_prihod.update_cell(next_row, 2, product_prihod) # В Название
-                    sheet_prihod.update_cell(next_row, 3, weight_prihod)  # В Остаток
-                    sheet_prihod.update_cell(next_row, 4, price_prihod)   # В Цена за кг
+                    # Если товара нет, добавляем новую строчку: пустой А (1), Название в B (2), Остаток в C (3), Цена в D (4)
+                    sheet_prihod.append_row(["", product_prihod, weight_prihod, price_prihod])
                 
                 st.success(f"Товар '{product_prihod}' успешно добавлен/обновлен!")
                 st.rerun()
