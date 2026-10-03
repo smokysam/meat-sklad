@@ -17,7 +17,14 @@ st.title("🥩 Псы на мясе: Склад")
 
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
-    client = gspread.service_account_from_dict(dict(st.secrets))
+    # Загружаем доступы из Секретов хостинга
+    creds_dict = dict(st.secrets)
+    
+    # ХАКЕРСКИЙ ТРЮК: Автоматически превращаем текстовые слэши в системные переносы строк
+    if "private_key" in creds_dict:
+        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    
+    client = gspread.service_account_from_dict(creds_dict)
     
     # Открываем по чистому текстовому названию таблицы
     sheet = client.open("Псы на мясе")
