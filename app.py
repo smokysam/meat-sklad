@@ -17,19 +17,13 @@ st.title("🥩 Псы на мясе: Склад")
 
 # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
 try:
-    # Читаем доступы из сохраненных Secrets
-    # --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
-try:
     client = gspread.service_account_from_dict(dict(st.secrets))
     
-    # ОТКРЫВАЕМ ПО НАЗВАНИЮ ТАБЛИЦЫ
+    # Открываем по чистому текстовому названию таблицы
     sheet = client.open("Псы на мясе")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
 except Exception as e:
-    st.error(f"Ошибка подключения к Google Таблице: {e}")
-    st.stop()
-
     st.error(f"Ошибка подключения к Google Таблице: {e}")
     st.stop()
 
