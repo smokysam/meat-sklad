@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 import pandas as pd
 import datetime
+import requests
 
 st.set_page_config(page_title="Псы на мясе: Склад", page_icon="🥩", layout="centered")
 
@@ -15,18 +16,22 @@ st.markdown("""
 
 st.title("🥩 Псы на мясе: Склад")
 
-# --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
+# --- ПОДКЛЮЧЕНИЕ ЧЕРЕЗ GOOGLE ДИСК ---
 try:
-    # Загружаем доступы из Секретов хостинга
-    creds_dict = dict(st.secrets)
+    # Вставьте скопированную ссылку на файл ниже между кавычками:
+    url = "https://drive.google.com/file/d/1ciW22IX7vDCoYSA1n2s01W3XjXMCaAQF/view?usp=drive_link"
     
-    # ХАКЕРСКИЙ ТРЮК: Автоматически превращаем текстовые слэши в системные переносы строк
-    if "private_key" in creds_dict:
-        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    # Автоматически вырезаем уникальный ID файла из ссылки
+    file_id = url.split("/d/")[1].split("/")[0] if "/d/" in url else url.split("id=")[1].split("&")[0] if "id=" in url else url
+
+    download_url = f"https://google.com{file_id}"
+    
+    response = requests.get(download_url)
+    creds_dict = response.json()
     
     client = gspread.service_account_from_dict(creds_dict)
     
-    # Открываем по чистому текстовому названию таблицы
+    # Открываем вашу таблицу по её названию
     sheet = client.open("Псы на мясе")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
