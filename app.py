@@ -16,7 +16,7 @@ st.markdown("""
 
 st.title("🥩 Псы на мясе: Склад")
 
-# --- ЗАГРУЗКА ФАЙЛА КЛЮЧА ИЗ ИНТЕРФЕЙСА ---
+# --- ЗАГРУЗКА ФАФЛА КЛЮЧА ИЗ ИНТЕРФЕЙСА ---
 if "creds" not in st.session_state:
     st.info("🔑 Пожалуйста, загрузите ваш файл ключа key.json для авторизации:")
     uploaded_file = st.file_uploader("Выберите файл key.json с компьютера", type="json")
@@ -29,9 +29,11 @@ if "creds" not in st.session_state:
             st.error(f"Не удалось прочитать файл: {e}")
     st.stop()
 
-# --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ---
+# --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ЧЕРЕЗ ЗАГРУЖЕННЫЙ КЛЮЧ ---
 try:
     client = gspread.service_account_from_dict(st.session_state["creds"])
+    
+    # Открываем вашу Google Таблицу по её точному имени
     sheet = client.open("Псы на мясе")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
