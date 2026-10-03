@@ -1,6 +1,6 @@
-import streamlit as st
+import streamlit st
 import gspread
-import pandas as pd
+import pandas pd
 import datetime
 import json
 
@@ -107,7 +107,11 @@ with tab2:
                     sheet_prihod.update_cell(row_idx, 3, new_stock)
                     sheet_prihod.update_cell(row_idx, 4, price_prihod)
                 else:
-                    sheet_prihod.append_row(["", product_prihod, weight_prihod, price_prihod])
+                    # ИСПРАВЛЕНО: убрали пустую строку на первом месте и перешли на прямую запись в конец таблицы по колонкам A, B, C
+                    next_row = len(df_prihod) + 2
+                    sheet_prihod.update_cell(next_row, 2, product_prihod) # В столбец A (Название)
+                    sheet_prihod.update_cell(next_row, 3, weight_prihod)  # В столбец B (Остаток)
+                    sheet_prihod.update_cell(next_row, 4, price_prihod)   # В столбец C (Цена за кг)
                 
                 st.success(f"Товар '{product_prihod}' успешно добавлен/обновлен!")
                 st.rerun()
