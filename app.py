@@ -15,7 +15,7 @@ st.markdown("""
 
 st.title("🥩 Псы на мясе: Склад")
 
-# --- ЖЕСТКО ВШИТЫЙ КЛЮЧ АВТОРИЗАЦИИ ---
+# --- ПОДКЛЮЧЕНИЕ К GOOGLE ТАБЛИЦЕ ЧЕРЕЗ ВШИТЫЙ КЛЮЧ ---
 try:
     creds_dict = {
       "type": "service_account",
@@ -30,14 +30,14 @@ try:
       "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sklad-final%40://gserviceaccount.com",
       "universe_domain": "googleapis.com"
     }
-    
-    # Принудительно чиним переносы строк в оперативной памяти сервера
+
+    # Автоматически чиним переносы строк в оперативной памяти сервера
     if "private_key" in creds_dict:
         creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-        
+
     client = gspread.service_account_from_dict(creds_dict)
     
-    # Открываем по чистому текстовому названию таблицы
+    # Открываем вашу Google Таблицу по её текстовому имени
     sheet = client.open("Псы на мясе")
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
@@ -51,6 +51,7 @@ df_prihod = pd.DataFrame(data_prihod)
 
 tab1, tab2, tab3 = st.tabs(["🛍️ Оформить Продажу", "📥 Принять Приход", "📊 Текущий Склад"])
 
+# --- ВКЛАДКА 1: ПРОДАЖА ---
 with tab1:
     st.subheader("Оформление продажи у прилавка")
     if df_prihod.empty:
@@ -85,6 +86,7 @@ with tab1:
                     st.success(f"Продано {weight_sale} кг '{product_sale}'. Остатки обновлены!")
                     st.rerun()
 
+# --- ВКЛАДКА 2: ПРИХОД ---
 with tab2:
     st.subheader("Поступление нового товара")
     with st.form("prihod_form", clear_on_submit=True):
@@ -111,6 +113,7 @@ with tab2:
                 st.success(f"Товар '{product_prihod}' успешно добавлен/обновлен!")
                 st.rerun()
 
+# --- ВКЛАДКА 3: ТЕКУЩИЙ СКЛАД ---
 with tab3:
     st.subheader("Актуальные остатки и розничные цены")
     if df_prihod.empty:
