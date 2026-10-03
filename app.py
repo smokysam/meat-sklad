@@ -16,9 +16,7 @@ st.markdown("""
 
 st.title("🥩 Псы на мясе: Склад")
 
-# --- ПОДКЛЮЧЕНИЕ ЧЕРЕЗ GOOGLE ДИСК ---
 try:
-    # Защищенная сборка ссылки от автопереводчика браузера
     protocol = "https://"
     domain = "://google.com"
     path = "/uc?export=download&id="
@@ -33,7 +31,7 @@ try:
     sheet_prihod = sheet.worksheet("приход")
     sheet_prodazha = sheet.worksheet("продажа")
 except Exception as e:
-    st.error(f"Ошибка подключения к Google Таблице: {e}")
+    st.error(f"Ошибка подключения: {e}")
     st.stop()
 
 data_prihod = sheet_prihod.get_all_records()
@@ -70,7 +68,7 @@ with tab1:
                     
                     row_idx = int(matched_rows.index[0]) + 2
                     new_stock = current_stock - weight_sale
-                    sheet_prihod.update_cell(row_idx, 2, new_stock)
+                    sheet_prihod.update_cell(row_idx, 3, new_stock)
                     
                     st.success(f"Продано {weight_sale} кг '{product_sale}'. Остатки обновлены!")
                     st.rerun()
@@ -93,10 +91,10 @@ with tab2:
                     current_stock = float(matched_rows["Остаток (кг)"].values[0])
                     row_idx = int(matched_rows.index[0]) + 2
                     new_stock = current_stock + weight_prihod
-                    sheet_prihod.update_cell(row_idx, 2, new_stock)
-                    sheet_prihod.update_cell(row_idx, 3, price_prihod)
+                    sheet_prihod.update_cell(row_idx, 3, new_stock)
+                    sheet_prihod.update_cell(row_idx, 4, price_prihod)
                 else:
-                    sheet_prihod.append_row([product_prihod, weight_prihod, price_prihod])
+                    sheet_prihod.append_row(["", product_prihod, weight_prihod, price_prihod])
                 
                 st.success(f"Товар '{product_prihod}' успешно добавлен/обновлен!")
                 st.rerun()
